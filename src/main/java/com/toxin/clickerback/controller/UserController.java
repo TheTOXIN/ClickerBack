@@ -1,11 +1,15 @@
 package com.toxin.clickerback.controller;
 
+import com.toxin.clickerback.api.ConnectAPI;
+import com.toxin.clickerback.entity.User;
 import com.toxin.clickerback.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 public class UserController {
 
     private final UserService userService;
@@ -15,9 +19,13 @@ public class UserController {
         this.userService = userService;
     }
 
-    @MessageMapping("/create")
-    public void create(String name) {
-        Long id = userService.create(name);
-        System.out.println(id);
+    @PutMapping("/create")
+    public User create(@RequestBody String name) {
+        return userService.create(name);
+    }
+
+    @PatchMapping("/connect")
+    public void connect(@RequestBody ConnectAPI api) {
+        userService.connect(api);
     }
 }
