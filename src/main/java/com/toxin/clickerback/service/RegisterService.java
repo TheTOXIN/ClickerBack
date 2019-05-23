@@ -5,10 +5,13 @@ import com.toxin.clickerback.entity.User;
 import com.toxin.clickerback.repository.RegisterRepository;
 import com.toxin.clickerback.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class RegisterService {
@@ -40,30 +43,32 @@ public class RegisterService {
         User userFrom = optionalFrom.get();
         User userTo = optionalTo.get();
 
-        Register register = registerRepository
-            .findByFrom(userFrom)
-            .orElse(new Register(userFrom, userTo));
+        registerRepository.save(
+            new Register(userFrom, userTo)
+        );
 
-        register.setTo(userTo);
-
-        counterService.generate(userFrom);
-        registerRepository.save(register);
-
-        checkRegister(userFrom, userTo);
+        if (check(userFrom, userTo))  {
+            complete(userFrom, userTo);
+        }
     }
 
-    private void checkRegister(User first, User second) {
+    private void complete(User userFrom, User userTo) {
+        counterService.generate(userFrom);
+        counterService.generate(userTo);
+
+        userService.complete(userFrom.getId());
+        userService.complete(userTo.getId());
+    }
+
+    private boolean check(User first, User second) {
         Optional<Register> optionalFirst = registerRepository.findByFrom(first);
         Optional<Register> optionalSecond = registerRepository.findByFrom(second);
 
-        if (!optionalFirst.isPresent() || !optionalSecond.isPresent()) return;
+        if (!optionalFirst.isPresent() || !optionalSecond.isPresent()) return false;
 
         Register registerFirst = optionalFirst.get();
         Register registerSecond = optionalSecond.get();
 
-        if (registerFirst.getFrom().equals(registerSecond.getTo()) && registerSecond.getFrom().equals(registerFirst.getTo())) {
-            userService.complete(first.getId());
-            userService.complete(second.getId());
-        }
+        return registerFirst.getFrom().equals(registerSecond.getTo()) && registerSecond.getFrom().equals(registerFirst.getTo());
     }
 }
