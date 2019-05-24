@@ -89,6 +89,6 @@ public class CounterService {
 
         session.put(myUser.getToken(), meUser.getId());
 
-        return new StateAPI(meUser.getName(), meCount, myCount);
+        return new StateAPI(meUser.getName(), myUser.getName(), meCount, myCount);
     }
 }

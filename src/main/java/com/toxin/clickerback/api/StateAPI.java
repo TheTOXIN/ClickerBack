@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StateAPI {
 
-    private String name;
+    private String meName;
+    private String myName;
 
     private int meCount;
     private int myCount;
