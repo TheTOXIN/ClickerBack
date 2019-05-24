@@ -51,6 +51,8 @@ public class UserService {
     }
 
     public void send(String socketId, String queueId) {
+        if(socketId == null) return;
+
         SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
 
         headerAccessor.setSessionId(socketId);
