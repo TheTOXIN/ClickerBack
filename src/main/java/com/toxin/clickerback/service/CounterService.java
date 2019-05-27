@@ -8,17 +8,20 @@ import com.toxin.clickerback.repository.CounterRepository;
 import com.toxin.clickerback.repository.RegisterRepository;
 import com.toxin.clickerback.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CounterService {
 
     private Map<UUID, String> session = new HashMap<>();
+    private Map<UUID, Integer> pool = new ConcurrentHashMap<>();
 
     private final CounterRepository counterRepository;
     private final UserService userService;
@@ -40,17 +43,7 @@ public class CounterService {
 
     public void click(UUID token) {
         userService.click(session.get(token));
-
-        Optional<User> optionalUser = userRepository.findByToken(token);
-        if (!optionalUser.isPresent()) return;
-
-        Optional<Counter> optionalCounter = counterRepository.findByUser(optionalUser.get());
-        if (!optionalCounter.isPresent()) return;
-
-        Counter counter = optionalCounter.get();
-        counter.setCount(counter.getCount() + 1);
-
-        counterRepository.save(counter);
+        pool.merge(token, 1, (a, b) -> a + b);
     }
 
     public void generate(User user) {
@@ -90,5 +83,27 @@ public class CounterService {
         session.put(myUser.getToken(), meUser.getId());
 
         return new StateAPI(meUser.getName(), myUser.getName(), meCount, myCount);
+    }
+
+    public void save(UUID token, int count) {
+        Optional<User> optionalUser = userRepository.findByToken(token);
+        if (!optionalUser.isPresent()) return;
+
+        Optional<Counter> optionalCounter = counterRepository.findByUser(optionalUser.get());
+        if (!optionalCounter.isPresent()) return;
+
+        Counter counter = optionalCounter.get();
+        counter.setCount(counter.getCount() + count);
+
+        counterRepository.save(counter);
+    }
+
+    @Scheduled(fixedDelay = 3000)
+    public void push() {
+        pool.forEach((token, count) -> {
+            pool.put(token, 0);
+            if (count == 0) return;
+            save(token, count);
+        });
     }
 }
